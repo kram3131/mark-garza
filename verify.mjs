@@ -48,6 +48,8 @@ for (let pass = 1; pass <= PASSES; pass++) {
       if (!st.fox.sitVisible || st.fox.walkVisible) fail(`${name}: settled but sit=${st.fox.sitVisible} walk=${st.fox.walkVisible}`);
       if (Math.abs(st.fox.sitH - 1.3) > 1e-6 || Math.abs(st.fox.walkH - 0.72) > 1e-6)
         fail(`${name}: mesh heights sit=${st.fox.sitH} walk=${st.fox.walkH}`);
+      if (st.fox.scale !== 1.15 || !st.fox.topLayer)
+        fail(`${name}: traveler layer scale=${st.fox.scale} topLayer=${st.fox.topLayer}`);
       // grounded on foot (0.46 = 1.3/2 − .19 padding), perched when riding
       const wantY = mode === 'foot' ? 0.46 : { tank: 1.90, plane: 1.77, moto: 1.43 }[mode];
       if (Math.abs(st.fox.sitY - wantY) > 0.02) fail(`${name}: fox sitY=${st.fox.sitY} want≈${wantY} (${mode})`);

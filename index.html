@@ -437,6 +437,7 @@ buildOpening(SPAN);
 
 /* ════════════════ the traveler — the fox and his vehicles ════════════════ */
 const foxGroup = new THREE.Group();
+foxGroup.scale.setScalar(1.15);   // Danney round-3: the ensemble read a touch small
 scene.add(foxGroup);
 let foxM = null, tankM = null, planeM = null, motoM = null;
 function traveler(file, h, yOff, assign) {
@@ -448,9 +449,13 @@ function traveler(file, h, yOff, assign) {
     const a = tex.image.width / tex.image.height;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(h * a, h),
       // DoubleSide: scrolling backward flips the group 180° to face travel
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }));
+      // depthTest off + top renderOrder: the traveler ALWAYS composites nearest to the
+      // screen — never sinks behind terrain/prop art (within the group, add order still
+      // keeps the vehicle over the fox's tucked butt)
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide,
+        depthTest: false, depthWrite: false }));
     m.position.y = h / 2 + yOff;
-    m.renderOrder = 5;
+    m.renderOrder = 30;
     foxGroup.add(m);
     assign(m);
   }, undefined, () => { tick(); console.warn('missing', file); });
@@ -517,12 +522,15 @@ const wrap1 = v => ((v % 1) + 1) % 1;
 
 /* test/debug hooks + ?p= deep-seek for headless QA */
 window.__worldSeek = v => { targetP = v; };
+window.__scene = scene;
 window.__worldState = () => ({ p, targetP, cam: camera.position.toArray(),
   travelers: { fox: !!foxM, tank: !!tankM, plane: !!planeM, moto: !!motoM },
   fox: (foxM && walkA && walkB) ? {
     sitVisible: foxM.visible, walkVisible: walkA.visible || walkB.visible,
     sitH: foxM.geometry.parameters.height, walkH: walkA.geometry.parameters.height,
     sitY: +foxM.position.y.toFixed(3), groupY: +foxGroup.position.y.toFixed(3),
+    scale: +foxGroup.scale.x.toFixed(2),
+    topLayer: foxM.renderOrder === 30 && !foxM.material.depthTest,
   } : null,
   pending, loaded });
 const QA = new URLSearchParams(location.search).has('qa');

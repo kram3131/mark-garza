@@ -36,6 +36,14 @@ the color un-multiplied from white, which keeps the soft watercolor edges instea
 hard halo you get from naive background removal. The code never fakes the look with CSS
 filters or blend modes — the map look lives entirely in the paint.
 
+One subtlety that bake taught us: global color-to-alpha also hollows out *interior*
+whites — the fox's white chest became a window, and dark props behind him bled through.
+`rematte.py` repairs that: only background *connected to the canvas border* stays
+transparent, interior whites become opaque paint again, and a feathered rim keeps the
+watercolor edge. The traveler sprites also render on their own top compositing layer
+(`renderOrder` + no depth test), so the fox and his vehicles always pass *in front of*
+the map, never through it.
+
 **The traveler.** The fox is a small state machine driven by his position on the route:
 vehicle windows along the x-axis swap him between *tank → plane → motorcycle → on foot*,
 each with a perch offset tuned to the vehicle's silhouette. On foot and moving, a two-frame
@@ -68,6 +76,7 @@ node verify.mjs    # server on :8231 required
 | `index.html` | the whole site — scene, travel, fox logic, QA hooks |
 | `assets/*.png` | the painted world, baked to RGBA |
 | `bake_alpha.py` | white-background → transparent-watercolor recipe |
+| `rematte.py` | keeps interior whites opaque (border-connected matting) |
 | `verify.mjs` | headless QA harness |
 
 ---
