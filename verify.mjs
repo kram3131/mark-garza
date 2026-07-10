@@ -51,7 +51,7 @@ for (let pass = 1; pass <= PASSES; pass++) {
       if (st.fox.scale !== 1.15 || !st.fox.topLayer)
         fail(`${name}: traveler layer scale=${st.fox.scale} topLayer=${st.fox.topLayer}`);
       // grounded on foot (0.46 = 1.3/2 − .19 padding), perched when riding
-      const wantY = mode === 'foot' ? 0.46 : { tank: 1.90, plane: 1.77, moto: 1.43 }[mode];
+      const wantY = mode === 'foot' ? 0.46 : { tank: 1.33, plane: 1.77, moto: 0.87 }[mode];
       if (Math.abs(st.fox.sitY - wantY) > 0.02) fail(`${name}: fox sitY=${st.fox.sitY} want≈${wantY} (${mode})`);
     }
   }

@@ -466,9 +466,11 @@ let walkA = null, walkB = null;
 // fox.png's body only fills 65% of its canvas, the walk frames fill 100%
 traveler('fox-walk-a.png', 0.72, 0, m => { walkA = m; m.visible = false; });
 traveler('fox-walk-b.png', 0.72, 0, m => { walkB = m; m.visible = false; });
-traveler('tank.png',  2.0, .04,  m => { tankM = m; m.visible = false; });
+// tank/moto yOff cancels their PNGs' transparent bottom padding (26.7% / 31.6% of
+// canvas) so treads + wheels sit ON the route like the fox's paws; plane stays airborne
+traveler('tank.png',  2.0, -.53,  m => { tankM = m; m.visible = false; });
 traveler('plane.png', 2.35, .1,  m => { planeM = m; m.visible = false; });
-traveler('moto.png',  1.65, .04, m => { motoM = m; m.visible = false; });
+traveler('moto.png',  1.65, -.52, m => { motoM = m; m.visible = false; });
 
 /* vehicle windows along the route (matches the scene x-windows) */
 const TANK_MIN = 14, TANK_MAX = 30;
@@ -479,7 +481,7 @@ const MOTO_MIN = 62, MOTO_MAX = 78;
 // so the sitting fox rests ON the road; vehicle perches were tuned with the padding in
 // tank 1.25 tucks the fox's butt just behind the turret dome (tank draws over the
 // fox at equal depth, so a slight overlap reads as seated, not hovering)
-const PERCH = { tank: [1.25, -.12], plane: [1.12, .08], moto: [.78, -.04], foot: [-.19, 0] };
+const PERCH = { tank: [.68, -.12], plane: [1.12, .08], moto: [.22, -.04], foot: [-.19, 0] };
 
 /* ════════════════ curves — camera + fox ════════════════ */
 const camCurve = new THREE.CatmullRomCurve3([
@@ -643,7 +645,7 @@ renderer.setAnimationLoop(now => {
     camera.position.copy(keep);
     if (!QA) {
       document.getElementById('loader').classList.add('done');
-      document.getElementById('hint').classList.add('show');
+      // scroll hint retired (Danney round-4): the map invites scrolling on its own
     }
   }
 });
