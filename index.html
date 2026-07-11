@@ -69,14 +69,21 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { MAP } from './map.config.js';
 
 /* ────────────────────────────────────────────────────────────────
-   The Cartographer's Desk — Jake Van Clief's field map as a
-   hand-painted world. Fork of Danney's notebook-world engine
-   (projects/portfolio, the mr-panda architecture): flat cutouts on
-   paper, a camera curve + a traveler curve, virtual scroll drives
-   progress, the story loops forever.
+   The Cartographer's Desk — a hand-painted world you scroll through.
+   Fork of Danney's notebook-world engine (projects/portfolio, the
+   mr-panda architecture): flat cutouts on paper, a camera curve + a
+   traveler curve, virtual scroll drives progress, the story loops.
+
+   THIS FILE IS THE ENGINE — you don't edit it to make the map yours.
+   All the content (name, chapters, notes, aphorisms, which art sits
+   where) lives in map.config.js. Edit that, not this.
    ──────────────────────────────────────────────────────────────── */
+
+document.title = MAP.title;
+{ const b = document.querySelector('#badge .n'); if (b) b.textContent = MAP.badge; }
 
 const canvas = document.getElementById('world');
 let renderer;
@@ -338,107 +345,84 @@ function waypoint(label, x) {
   place(waypointTexture(label), { x, y: 1.05, h: .62, z: 0.05, tilt: -.02 });
 }
 
-/* ════════════════ THE ROUTE, scene by scene ════════════════
-   x-windows: welcome 0–14 · corps 14–30 · edinburgh 30–46 ·
-   institute 46–62 · practice 62–78 · icm 78–94 · notes 94–108 · bridge */
+/* ════════════════ THE ROUTE — built from map.config.js ════════════════
+   Everything here is placement plumbing; the CONTENT lives in MAP. Each
+   chapter becomes a waypoint stamp + a pinned note + an inked aphorism +
+   any painted art/props, laid out west→east and looped seamlessly. */
 
-function buildOpening(ox) {   // ox = 0 real opening, SPAN = loop bridge copy
-  place(writingTexture({ lines: ['The Field Map of', 'Jake Van Clief'], font: '700 96px "Caveat"', ink: '#3b2f21', align: 'center' }),
-    { x: ox + 5.2, y: 5.0, h: 2.6, tilt: -.02 });
-  place(writingTexture({ lines: ['a life, charted'], font: '500 58px "Caveat"', ink: '#8a765a', align: 'center' }),
-    { x: ox + 5.2, y: 6.6, h: .8, z: 0.06 });
-  place(writingTexture({ lines: ['Marine cryptographer  →  AI-governance researcher  →  solo operator'], font: '500 52px "Caveat"', ink: '#6d5c43', w: 1400 }),
-    { x: ox + 5.4, y: 3.4, h: .72, z: 0.06, tilt: .015 });
-  // 'scroll east →' map note retired with the overlay hint (Danney round-4)
-  cutout('fox-hero.png', { x: ox + 11.3, y: 4.7, h: 3.1, wallPin: true, framed: true, sway: .008 });
-  place(writingTexture({ lines: ['fig. 0 — the cartographer'], font: '500 44px "Caveat"', ink: '#8a765a' }),
-    { x: ox + 11.3, y: 2.85, h: .5, z: 0.05 });
-  cutout('prop-compass.png', { x: ox + 3.4, h: 1.2, z: PATH_Z - 1.6, sway: .01 });
-  cutout('prop-twine.png',   { x: ox + 13.6, h: .85, z: PATH_Z - 1.2, sway: .012 });
+const CH_START = 15.2, CH_STEP = 16;              // default chapter cadence along x
+const RIDE_PAD = 1.2, RIDE_LEN = 16;              // a ride owns [wpX−PAD, wpX−PAD+LEN]
+const wpXof = (ch, i) => ch.wpX ?? (CH_START + i * CH_STEP);
+
+// a painted cutout from an art/prop spec {file, x, y?, h, wallPin?, framed?, zBack?, sway?, flip?, bob?}
+function paintSpec(a, ox = 0) {
+  const o = { x: a.x + ox, h: a.h ?? 3, sway: a.sway ?? .02 };
+  if (a.y != null) o.y = a.y;
+  if (a.wallPin) o.wallPin = true;
+  if (a.framed)  o.framed = true;
+  if (a.flip)    o.flip = true;
+  if (a.bob)     o.bob = a.bob;
+  if (!a.wallPin && a.zBack != null) o.z = PATH_Z - a.zBack;
+  cutout(a.file, o);
 }
+// a pinned note card {title?, lines, pin?, font?, w?, x?, y?, h?, z?, tilt?}
+function noteSpec(n, i, cx, ox = 0) {
+  place(noteTexture({ title: n.title ?? null, lines: n.lines, pin: n.pin, font: n.font, w: n.w }),
+        { x: (n.x ?? cx + 2.5) + ox, y: n.y ?? 5.9, h: n.h ?? 2.3, z: n.z ?? .07,
+          tilt: n.tilt ?? (i % 2 ? .03 : -.03) });
+}
+// free handwriting (aphorism / closing line) {lines, ink?, font?, align?, w?, x?, y?, h?, z?, tilt?}
+function writeSpec(w, i, cx, ox = 0) {
+  place(writingTexture({ lines: w.lines, font: w.font ?? '600 58px "Caveat"',
+                         ink: w.ink ?? '#6d5c43', align: w.align, w: w.w }),
+        { x: (w.x ?? cx + 11) + ox, y: w.y ?? 6.8, h: w.h ?? 1.0, z: w.z ?? .07,
+          tilt: w.tilt ?? (i % 2 ? -.02 : .02) });
+}
+// one chapter, placed at offset ox (0 real, −SPAN for the loop-seam copy of the finale)
+function buildChapter(ch, i, ox = 0) {
+  const cx = wpXof(ch, i);
+  waypoint(ch.wp ?? ('WP·' + String(i).padStart(2, '0')), cx + ox);
+  for (const a of ch.art   ?? []) paintSpec(a, ox);
+  for (const p of ch.props ?? []) paintSpec(p, ox);
+  if (ch.note) noteSpec(ch.note, i, cx, ox);
+  for (const n of ch.extraNotes   ?? []) noteSpec(n, i, cx, ox);
+  if (ch.aphorism) writeSpec(ch.aphorism, i, cx, ox);
+  for (const w of ch.extraWriting ?? []) writeSpec(w, i, cx, ox);
+}
+
+function buildOpening(ox) {   // ox = 0 real opening, SPAN = loop-bridge copy
+  const o = MAP.opening, pl = o.place ?? {};
+  const hl = pl.headline ?? {};
+  place(writingTexture({ lines: o.headline ?? ['The Field Map of', MAP.badge],
+                         font: hl.font ?? '700 96px "Caveat"', ink: hl.ink ?? '#3b2f21', align: 'center' }),
+    { x: (hl.x ?? 5.2) + ox, y: hl.y ?? 5.0, h: hl.h ?? 2.6, tilt: hl.tilt ?? -.02 });
+  if (o.tagline) { const t = pl.tagline ?? {};
+    place(writingTexture({ lines: [o.tagline], font: t.font ?? '500 58px "Caveat"', ink: t.ink ?? '#8a765a', align: 'center' }),
+      { x: (t.x ?? 5.2) + ox, y: t.y ?? 6.6, h: t.h ?? .8, z: t.z ?? .06 }); }
+  if (o.arc) { const a = pl.arc ?? {};
+    place(writingTexture({ lines: [o.arc], font: a.font ?? '500 52px "Caveat"', ink: a.ink ?? '#6d5c43', w: a.w ?? 1400 }),
+      { x: (a.x ?? 5.4) + ox, y: a.y ?? 3.4, h: a.h ?? .72, z: a.z ?? .06, tilt: a.tilt ?? .015 }); }
+  if (o.hero?.image) { const h = pl.hero ?? {};
+    cutout(o.hero.image, { x: (h.x ?? 11.3) + ox, y: h.y ?? 4.7, h: h.h ?? 3.1, wallPin: true, framed: true, sway: h.sway ?? .008 });
+    if (o.hero.caption) { const c = pl.caption ?? {};
+      place(writingTexture({ lines: [o.hero.caption], font: c.font ?? '500 44px "Caveat"', ink: c.ink ?? '#8a765a' }),
+        { x: (c.x ?? 11.3) + ox, y: c.y ?? 2.85, h: c.h ?? .5, z: c.z ?? .05 }); } }
+  for (const p of o.props ?? []) paintSpec(p, ox);
+}
+
+/* build the world: opening, every chapter, then the seam copies */
 buildOpening(0);
-
-/* ── 00 · The Corps (tank) ── */
-waypoint('WP·00', 15.2);
-cutout('terrain-t1.png', { x: 22.5, y: 2.7, h: 6.4, wallPin: true, sway: 0 });
-place(noteTexture({
-  title: '00 · the corps — 8 years, USMC',
-  lines: ['Cryptography and the avionics of', 'F-35 and F-18 flight lines.',
-          'Signals before software — building', 'things that cannot afford to fail.'],
-}), { x: 17.5, y: 5.9, h: 2.35, z: 0.07, tilt: -.03 });
-place(writingTexture({ lines: ['“Build at the layer that survives.”'], font: '600 62px "Caveat"', ink: '#66713f' }),
-  { x: 27.5, y: 6.9, h: .8, z: 0.07, tilt: .025 });
-
-/* ── 01 · Edinburgh (plane) ── */
-waypoint('WP·01', 31.2);
-cutout('prop-edinburgh-skyline.png', { x: 39, y: 2.5, h: 5.6, wallPin: true, sway: 0 });
-place(noteTexture({
-  title: '01 · edinburgh — M.Sc., AI & Governance',
-  lines: ['He flies to the birthplace of AI.', 'The turn from running systems', 'to governing them.'],
-}), { x: 32.6, y: 6.0, h: 2.2, z: 0.07, tilt: .03 });
-place(writingTexture({ lines: ['“In a world full of answers,', ' questions become valuable.”'], font: '600 56px "Caveat"', ink: '#4c6378' }),
-  { x: 43.6, y: 6.7, h: 1.35, z: 0.07, tilt: -.02 });
-
-/* ── 02 · The Institute (on foot) ── */
-waypoint('WP·02', 47.2);
-place(noteTexture({
-  title: '02 · the institute — Edinburgh Futures',
-  lines: ['Human psychometric tests, run on', 'the machines — personality and', 'moral reasoning, measured across', 'seven model providers.'],
-}), { x: 51, y: 5.9, h: 2.35, z: 0.07, tilt: -.025 });
-place(writingTexture({ lines: ['“You can’t write a reward function', ' for your opinion.”'], font: '600 56px "Caveat"', ink: '#694f66' }),
-  { x: 57.5, y: 6.8, h: 1.35, z: 0.07, tilt: .02 });
-cutout('prop-inkpot.png',  { x: 49.5, h: 1.2, z: PATH_Z - 1.3, sway: .01 });
-cutout('prop-magnifier.png', { x: 58.6, h: 1.1, z: PATH_Z - 1.2, sway: .012 });
-
-/* ── 03 · The Practice (moto) ── */
-waypoint('WP·03', 63.2);
-place(noteTexture({
-  title: '03 · the practice — going solo',
-  lines: ['Three people producing at the', 'scale of fifty, advising at up to', '$2,000 an hour. The system', 'does the scaling.'],
-}), { x: 66.5, y: 5.9, h: 2.35, z: 0.07, tilt: .03 });
-place(writingTexture({ lines: ['“Stop selling agents.', ' Sell a company.”'], font: '600 60px "Caveat"', ink: '#96543f' }),
-  { x: 73.5, y: 6.8, h: 1.4, z: 0.07, tilt: -.025 });
-cutout('prop-tea.png', { x: 70.8, h: .85, z: PATH_Z - 1.3, sway: .01 });
-
-/* ── 04 · ICM (on foot) ── */
-waypoint('WP·04', 79.2);
-cutout('prop-folder-mountains.png', { x: 88.5, h: 4.2, z: PATH_Z - 1.5, sway: .006 });
-cutout('concept-a-chart.png', { x: 81.6, y: 4.6, h: 3.4, wallPin: true, framed: true, sway: .006 });
-place(noteTexture({
-  title: '04 · ICM — the method',
-  lines: ['Folder structure as agent architecture.', 'Numbered folders are stages, markdown', 'carries the context. Open-source, MIT,', 'published as research.'],
-}), { x: 84.8, y: 6.3, h: 2.3, z: 0.07, tilt: -.02 });
-place(noteTexture({
-  title: null, pin: '#8a765a', font: '500 42px "Caveat"',
-  lines: ['arxiv.org/abs/2603.16021', 'github.com/RinDig'],
-}), { x: 91.3, y: 5.6, h: 1.15, z: 0.07, tilt: .04 });
-place(writingTexture({ lines: ['“The folder IS the agent.”'], font: '600 64px "Caveat"', ink: '#a9792f' }),
-  { x: 80.5, y: 2.2, h: .8, z: 0.07, tilt: .02 });
-
-/* ── 05 · Clief Notes (arrive) + finale ── */
-function buildFinale(ox) {  // duplicated at -SPAN so the loop seam is invisible
-  waypoint('WP·05', ox + 95.4);
-  cutout('prop-lighthouse-village.png', { x: ox + 102.5, y: 2.45, h: 5.4, wallPin: true, sway: 0 });
-  place(noteTexture({
-    title: '05 · clief notes — the teaching layer',
-    lines: ['A channel from ~200 to ~48,000 in four', 'months on zero ad spend. ~1,600 trained,', '~41,500 mapping their work', 'instead of storing it.'],
-  }), { x: ox + 96.8, y: 5.9, h: 2.35, z: 0.07, tilt: -.03 });
-  place(writingTexture({ lines: ['“Map your work,', ' don’t just store it.”'], font: '600 62px "Caveat"', ink: '#cf7a35' }),
-    { x: ox + 107.3, y: 6.6, h: 1.45, z: 0.07, tilt: .02 });
-  place(writingTexture({ lines: ['the map is never finished —', 'and neither is the work. keep scrolling →'], font: '500 52px "Caveat"', ink: '#8a765a' }),
-    { x: ox + 108.6, y: 2.6, h: 1.15, z: 0.07, tilt: -.015 });
-}
-buildFinale(0);
-buildFinale(-SPAN);
-
-/* the loop bridge — a copy of the opening so p=1 looks like p=0 */
+MAP.chapters.forEach((ch, i) => buildChapter(ch, i, 0));
+// duplicate the finale one route-length WEST + the opening one length EAST,
+// so scrolling past the last chapter wraps back to the title with no seam
+MAP.chapters.forEach((ch, i) => { if (ch.finale) buildChapter(ch, i, -SPAN); });
 buildOpening(SPAN);
 
 /* ════════════════ the traveler — the fox and his vehicles ════════════════ */
 const foxGroup = new THREE.Group();
-foxGroup.scale.setScalar(1.15);   // Danney round-3: the ensemble read a touch small
+foxGroup.scale.setScalar(MAP.mascot.scale ?? 1.15);   // ensemble size (Danney round-3)
 scene.add(foxGroup);
-let foxM = null, tankM = null, planeM = null, motoM = null;
+let foxM = null;
 function traveler(file, h, yOff, assign) {
   pending++;
   texLoader.load('assets/' + file, tex => {
@@ -459,28 +443,28 @@ function traveler(file, h, yOff, assign) {
     assign(m);
   }, undefined, () => { tick(); console.warn('missing', file); });
 }
-traveler('fox.png',   1.3, 0,    m => { foxM = m; });
+// mascot sprites (the idle/sitting pose + two trot frames). yOff cancels a PNG's
+// transparent bottom padding so paws/wheels/treads meet the road; the plane stays airborne.
+const MASCOT = MAP.mascot;
+traveler(MASCOT.sit.file,   MASCOT.sit.h,   MASCOT.sit.yOff ?? 0, m => { foxM = m; });
 let walkA = null, walkB = null;
-// 0.72 matches the trot fox's head + satchel to the sitting fox at 1.3 —
-// fox.png's body only fills 65% of its canvas, the walk frames fill 100%
-traveler('fox-walk-a.png', 0.72, 0, m => { walkA = m; m.visible = false; });
-traveler('fox-walk-b.png', 0.72, 0, m => { walkB = m; m.visible = false; });
-// tank/moto yOff cancels their PNGs' transparent bottom padding (26.7% / 31.6% of
-// canvas) so treads + wheels sit ON the route like the fox's paws; plane stays airborne
-traveler('tank.png',  2.0, -.53,  m => { tankM = m; m.visible = false; });
-traveler('plane.png', 2.35, .1,  m => { planeM = m; m.visible = false; });
-traveler('moto.png',  1.65, -.52, m => { motoM = m; m.visible = false; });
+traveler(MASCOT.walkA.file, MASCOT.walkA.h, MASCOT.walkA.yOff ?? 0, m => { walkA = m; m.visible = false; });
+traveler(MASCOT.walkB.file, MASCOT.walkB.h, MASCOT.walkB.yOff ?? 0, m => { walkB = m; m.visible = false; });
 
-/* vehicle windows along the route (matches the scene x-windows) */
-const TANK_MIN = 14, TANK_MAX = 30;
-const PLANE_MIN = 30, PLANE_MAX = 46;
-const MOTO_MIN = 62, MOTO_MAX = 78;
-/* fox perch offset per mode: [y, x] relative to the vehicle */
-// foot y −.19 cancels fox.png's transparent padding below the paws (152/1024 × 1.3)
-// so the sitting fox rests ON the road; vehicle perches were tuned with the padding in
-// tank 1.25 tucks the fox's butt just behind the turret dome (tank draws over the
-// fox at equal depth, so a slight overlap reads as seated, not hovering)
-const PERCH = { tank: [.68, -.12], plane: [1.12, .08], moto: [.22, -.04], foot: [-.19, 0] };
+// vehicles keyed by id, + the ride windows derived from the chapters that declare a `ride`.
+// A chapter's ride owns [wpX−PAD, wpX−PAD+LEN] — which reproduces the hand-tuned windows.
+const vehMesh = {};                                   // id → mesh
+const PERCH = { foot: MASCOT.sit.perch ?? [-.19, 0] };  // fox perch [y, x] per mode
+for (const [id, v] of Object.entries(MAP.vehicles ?? {})) {
+  traveler(v.file, v.h, v.yOff ?? 0, m => { vehMesh[id] = m; m.visible = false; });
+  PERCH[id] = v.perch ?? [0, 0];
+}
+const RIDES = MAP.chapters.flatMap((ch, i) => {
+  if (!ch.ride) return [];
+  const cx = wpXof(ch, i);
+  return [{ id: ch.ride, min: cx - RIDE_PAD, max: cx - RIDE_PAD + RIDE_LEN, flies: !!MAP.vehicles[ch.ride]?.flies }];
+});
+const rideAt = px => RIDES.find(r => px > r.min && px < r.max) ?? null;
 
 /* ════════════════ curves — camera + fox ════════════════ */
 const camCurve = new THREE.CatmullRomCurve3([
@@ -525,7 +509,7 @@ const wrap1 = v => ((v % 1) + 1) % 1;
 window.__worldSeek = v => { targetP = v; };
 window.__scene = scene;
 window.__worldState = () => ({ p, targetP, cam: camera.position.toArray(),
-  travelers: { fox: !!foxM, tank: !!tankM, plane: !!planeM, moto: !!motoM },
+  travelers: { fox: !!foxM, ...Object.fromEntries(Object.keys(MAP.vehicles ?? {}).map(id => [id, !!vehMesh[id]])) },
   fox: (foxM && walkA && walkB) ? {
     sitVisible: foxM.visible, walkVisible: walkA.visible || walkB.visible,
     sitH: foxM.geometry.parameters.height, walkH: walkA.geometry.parameters.height,
@@ -581,17 +565,15 @@ renderer.setAnimationLoop(now => {
   foxCurve.getPointAt(wrap1((px + 1.5) / SPAN), foxGroup.position);
   foxGroup.position.x = px;
 
-  const mode = (px > TANK_MIN && px < TANK_MAX) ? 'tank'
-             : (px > PLANE_MIN && px < PLANE_MAX) ? 'plane'
-             : (px > MOTO_MIN && px < MOTO_MAX) ? 'moto' : 'foot';
-  if (tankM)  tankM.visible  = mode === 'tank';
-  if (planeM) planeM.visible = mode === 'plane';
-  if (motoM)  motoM.visible  = mode === 'moto';
+  const ride = rideAt(px);
+  const mode = ride ? ride.id : 'foot';
+  const flying = !!(ride && ride.flies);
+  for (const [id, m] of Object.entries(vehMesh)) m.visible = (mode === id);
   // on foot + moving → 2-frame trot cycle; at rest (or riding) → the sitting fox
   const onFootWalking = mode === 'foot' && Math.abs(d) > 0.0008 && walkA && walkB;
   if (foxM) {
-    const [py, pxo] = PERCH[mode];
-    foxM.position.y = 1.3 / 2 + py;
+    const [py, pxo] = PERCH[mode] ?? PERCH.foot;
+    foxM.position.y = MASCOT.sit.h / 2 + py;
     foxM.position.x = pxo;
     foxM.visible = !onFootWalking;
   }
@@ -601,11 +583,11 @@ renderer.setAnimationLoop(now => {
     walkB.visible = onFootWalking && !gait;
   }
 
-  // flight: the plane window lifts the whole group off the route
-  const targetFlight = mode === 'plane' ? 3.3 : 0;
+  // flight: a flying ride (the plane) lifts the whole group off the route
+  const targetFlight = flying ? 3.3 : 0;
   flightY += (targetFlight - flightY) * (1 - Math.exp(-4.5 * dt));
 
-  if (mode === 'plane') {
+  if (flying) {
     foxGroup.position.y = flightY + Math.sin(t * 1.3) * .12;
     foxGroup.rotation.z = Math.sin(t * .9) * .03;
   } else if (mode === 'foot') {
@@ -620,7 +602,7 @@ renderer.setAnimationLoop(now => {
   foxGroup.rotation.z += Math.max(-.12, Math.min(.12, vel * 18));
 
   // odometer HUD
-  const km = Math.round(cp * 5600 / 10) * 10;
+  const km = Math.round(cp * (MAP.odometerKm ?? 5600) / 10) * 10;
   if (km !== lastKm) { lastKm = km; kmEl.textContent = km.toLocaleString('en-US'); }
 
   for (const a of animated) a.fn(t);

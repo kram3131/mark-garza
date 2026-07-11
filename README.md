@@ -9,6 +9,8 @@ the map as a handwritten note card. The map loops: it is never finished, and nei
 
 Built as a gift. Map your work — don't just store it.
 
+▶ **[See it live](https://danneytrieu.github.io/cartographers-desk/)** — scroll the map in your browser.
+
 ## ▶ Make it your own — 2-minute tutorial
 
 New here? Watch the walkthrough — swap the fox for your own traveler and put up your
@@ -20,6 +22,19 @@ own version, start to finish (narrated by Clio):
 
 The exact prompts it uses live in [`prompts/`](prompts/): one shared **style block** plus a
 short subject line per drawing — that's the whole consistency trick.
+
+### …or let Claude build it for you
+
+Open this folder in [Claude Code](https://claude.com/claude-code) and say
+**"make this map mine."** It runs the bundled [`make-your-map`](.claude/skills/make-your-map/)
+skill: it interviews you about your life in a handful of questions, rewrites
+[`map.config.js`](map.config.js) with your chapters, helps you swap the artwork, and
+deploys it to your own GitHub Pages. Prefer to do it by hand? The same steps are in
+[`MAKE-YOUR-OWN.md`](MAKE-YOUR-OWN.md).
+
+**The one file you edit is [`map.config.js`](map.config.js)** — the whole map as plain
+data (name, chapters, notes, aphorisms, which art sits where). `index.html` is just the
+engine; you never touch it.
 
 ## Run it
 
@@ -34,10 +49,13 @@ Deep links: `?p=0.46` (or `#0`–`#7`) jump to a waypoint. Scroll, swipe, or arr
 
 ## How it's built
 
-**One file, one scene.** `index.html` is a single Three.js scene: a parchment "wall" with a
+**One engine, one config.** `index.html` is a single Three.js scene: a parchment "wall" with a
 survey grid, a ground plane with the dotted route, and every drawing placed as a textured
-plane. A Catmull-Rom curve carries the camera east; wheel/touch/keyboard events feed a
-virtual scroll target and the camera position is damped toward it every frame
+plane. It reads its *content* — the name, the chapters, the note cards, the aphorisms, which
+art sits where — from [`map.config.js`](map.config.js), so making the map about a different
+person means editing that one data file, never the engine. A Catmull-Rom curve carries the
+camera east; wheel/touch/keyboard events feed a virtual scroll target and the camera position
+is damped toward it every frame
 (`p += d * (1 − e^(−3.5·dt))`), which is what makes the travel feel like sliding a heavy
 map drawer rather than stepping through slides.
 
@@ -85,11 +103,15 @@ node verify.mjs    # server on :8231 required
 
 | file | what it is |
 |---|---|
-| `index.html` | the whole site — scene, travel, fox logic, QA hooks |
+| `map.config.js` | **the map as data** — name, chapters, notes, aphorisms, art placement. Edit this. |
+| `index.html` | the engine — scene, travel, mascot logic, loop, QA hooks. Leave it alone. |
 | `assets/*.png` | the painted world, baked to RGBA |
 | `bake_alpha.py` | white-background → transparent-watercolor recipe |
 | `rematte.py` | keeps interior whites opaque (border-connected matting) |
 | `verify.mjs` | headless QA harness |
+| `prompts/` | the art recipe — one style block + a subject line per plate |
+| `.claude/skills/make-your-map/` | a Claude skill that builds your own map from an interview |
+| `MAKE-YOUR-OWN.md` | the by-hand version of the same steps |
 
 ---
 

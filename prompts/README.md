@@ -2,6 +2,8 @@
 
 Every image in `../assets/` is a watercolor field-journal plate generated the same way. This folder is the recipe, so you can re-render any piece in your own style — or rebuild the whole map around your own life.
 
+> **Don't want to do it by hand?** Open the repo in Claude Code and say *"make this map mine"* — the bundled [`make-your-map`](../.claude/skills/make-your-map/) skill walks you through these prompts, bakes the results, and wires them into [`../map.config.js`](../map.config.js) for you. This folder is what that skill reads.
+
 ## The pipeline
 
 1. **Model:** nano-banana-pro (any strong image model works — the style block does the heavy lifting).
