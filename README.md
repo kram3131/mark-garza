@@ -7,7 +7,7 @@ the route with you — riding a tank through the Corps years, flying over Edinbu
 motorcycle into the solo-practice miles — passing six waypoints of a career, each pinned to
 the map as a handwritten note card. The map loops: it is never finished, and neither is the work.
 
-Built as a gift. Map your work — don't just store it.
+Map your work — don't just store it.
 
 ▶ **[See it live](https://danneytrieu.github.io/cartographers-desk/)** — scroll the map in your browser.
 
