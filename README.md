@@ -14,7 +14,9 @@ Built as a gift. Map your work — don't just store it.
 New here? Watch the walkthrough — swap the fox for your own traveler and put up your
 own version, start to finish (narrated by Clio):
 
-[![Make it your own — a 2-minute walkthrough](demo/poster.png)](demo/make-your-own.mp4)
+[![Make it your own — a 2-minute walkthrough](demo/poster.png)](https://danneytrieu.github.io/cartographers-desk/demo/watch.html)
+
+▶ **[Watch the walkthrough](https://danneytrieu.github.io/cartographers-desk/demo/watch.html)** (plays in your browser)
 
 The exact prompts it uses live in [`prompts/`](prompts/): one shared **style block** plus a
 short subject line per drawing — that's the whole consistency trick.
