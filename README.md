@@ -9,6 +9,16 @@ the map as a handwritten note card. The map loops: it is never finished, and nei
 
 Built as a gift. Map your work — don't just store it.
 
+## ▶ Make it your own — 2-minute tutorial
+
+New here? Watch the walkthrough — swap the fox for your own traveler and put up your
+own version, start to finish (narrated by Clio):
+
+[![Make it your own — a 2-minute walkthrough](demo/poster.png)](demo/make-your-own.mp4)
+
+The exact prompts it uses live in [`prompts/`](prompts/): one shared **style block** plus a
+short subject line per drawing — that's the whole consistency trick.
+
 ## Run it
 
 No build step, no dependencies at runtime — one HTML file plus painted PNG cutouts.
