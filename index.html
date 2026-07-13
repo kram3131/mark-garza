@@ -505,7 +505,7 @@ function showHint() { hintEl.classList.add('show'); }
 function bumpHint() { hintEl.classList.remove('show'); clearTimeout(hintTimer); hintTimer = setTimeout(showHint, 7000); }
 // scroll / swipe / arrow UP travels forward (east); DOWN goes back
 const WHEEL_K = 0.00007;
-addEventListener('wheel', e => { targetP -= e.deltaY * WHEEL_K; bumpHint(); }, { passive: true });
+addEventListener('wheel', e => { targetP += e.deltaY * WHEEL_K; bumpHint(); }, { passive: true });
 let lastTouch = null;
 addEventListener('touchstart', e => { lastTouch = e.touches[0].clientY; }, { passive: true });
 addEventListener('touchmove', e => {
