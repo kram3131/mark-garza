@@ -7,12 +7,13 @@ import { chromium } from 'playwright';
 const OUT = process.env.OUT || '/tmp/jake-world';
 const PASSES = +(process.env.PASSES || 3);
 const SCENES = [
-  ['welcome', 0.02], ['corps', 0.19], ['edinburgh', 0.34], ['institute', 0.46],
-  ['practice', 0.60], ['icm', 0.76], ['notes', 0.90], ['seam', 0.999],
+  ['welcome', 0.02], ['brown', 0.135], ['agencies', 0.36], ['flatwater', 0.50],
+  ['inspirus', 0.66], ['laimen', 0.85], ['seam', 0.999],
 ];
-// vehicle windows (mirror of index.html) — mode from the fox's route x
-const modeOf = px => (px > 14 && px < 30) ? 'tank' : (px > 30 && px < 46) ? 'plane'
-                   : (px > 62 && px < 78) ? 'moto' : 'foot';
+// vehicle windows (mirror of Mark's map.config.js rides) — mode from the fox's route x.
+// agencies→plane @wpX35, flatwater→moto @wpX55, laimen→moto @wpX95; window = [wpX−1.2, wpX+14.8]
+const modeOf = px => (px > 33.8 && px < 49.8) ? 'plane'
+                   : ((px > 53.8 && px < 69.8) || (px > 93.8 && px < 109.8)) ? 'moto' : 'foot';
 
 let failures = 0;
 const fail = m => { failures++; console.log('  ✗ FAIL:', m); };
@@ -57,10 +58,10 @@ for (let pass = 1; pass <= PASSES; pass++) {
   }
   ok('scene sweep done');
 
-  // ── fox swap: walking vs idle at the SAME foot spot (institute stretch) ──
-  await page.evaluate(v => window.__worldSeek(v), 0.44);
+  // ── fox swap: walking vs idle at the SAME foot spot (inspirus stretch, px≈73→80) ──
+  await page.evaluate(v => window.__worldSeek(v), 0.63);
   await page.waitForTimeout(2000);
-  await page.evaluate(v => window.__worldSeek(v), 0.50);   // long damp → sustained walking
+  await page.evaluate(v => window.__worldSeek(v), 0.70);   // long damp → sustained walking
   await page.waitForTimeout(300);
   let st = await page.evaluate(() => window.__worldState());
   if (!st.fox.walkVisible || st.fox.sitVisible) fail(`mid-scroll on foot: walk=${st.fox.walkVisible} sit=${st.fox.sitVisible}`);
